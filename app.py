@@ -48,7 +48,7 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
     await post_request(settings.USERS_API_URL, user_data)
 
     await message.answer(
-        text=f"Assalomu alaykum {message.from_user.full_name}! Ism familiyangizni to'liq yozing",
+        text=f"Assalomu alaykum! Ro'yxatdan o'tish uchun ism familiyangizni to'liq yozing",
         reply_markup=buttons.REMOVE_KEYBOARD,
     )
 
@@ -192,10 +192,15 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
         json_response = response.json()
         ticket_qr_code_path = json_response.get("qr_code")
 
-        await callback.message.answer_photo(
-            photo=f"https://api.ibratdebate.uz/media/{ticket_qr_code_path}",
-            caption="Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz"
-        )
+        try:
+            await callback.message.answer_photo(
+                photo=f"https://api.ibratdebate.uz/media/{ticket_qr_code_path}",
+                caption="Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz\nDebate da ko'rishguncha!"
+            )
+        except Exception:
+            await callback.message.answer(
+                text="Siz ro'yxatdan o'tdingiz debate da kutamiz"
+            )
         return
 
     await patch_request(
@@ -206,7 +211,7 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
     await callback.message.delete()
 
     await callback.message.answer(
-        text="Tabriklaymiz botimizdan ro'yxatdan o'tdingiz",
+        text="Tabriklaymiz botimizdan ro'yxatdan o'tdingiz\nDebate ga ticket olish uchun '📝 Debate ga ro'yxatdan o'tish' tugmasini bosing",
         reply_markup=buttons.MAIN_KEYBOARD,
     )
 
@@ -221,7 +226,7 @@ async def coming_debates(message: Message, state: FSMContext) -> None:
     response = await get_request(settings.DEBATES_API_URL)
     json_response = response.json()
     debates = json_response.get("results", [])
-    response_text = "Kelasi debatlar:\n"
+    response_text = "Bu yerda bizda tez kunda bo'ladigan debate larimizning ro'yxati:\n\n"
 
     for key, debate in enumerate(debates, start=1):
         region_name = debate["region"]["name"]
