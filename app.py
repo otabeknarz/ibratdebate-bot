@@ -41,7 +41,7 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
             else str(message.from_user.id)
         ),
         "first_name": message.from_user.first_name,
-        "last_name": message.from_user.last_name,
+        "last_name": message.from_user.last_name if message.from_user.last_name else "",
         "language_code": message.from_user.language_code,
     }
     await post_request(settings.USERS_API_URL, user_data)
