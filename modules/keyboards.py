@@ -15,7 +15,6 @@ class Buttons:
 
     MAIN_KEYBOARD = ReplyKeyboardMarkup(
         keyboard=[
-            [KeyboardButton(text="👀 Kelasi debatlar")],
             [KeyboardButton(text="📝 Debate ga ro'yxatdan o'tish")],
         ],
         resize_keyboard=True,
