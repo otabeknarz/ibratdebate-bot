@@ -2,7 +2,6 @@ import asyncio
 import logging
 import sys
 from os import getenv
-from pyexpat.errors import messages
 
 from aiogram import Bot, Dispatcher, html, F
 from aiogram.client.default import DefaultBotProperties
@@ -189,17 +188,23 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
         debate_id = json_response.get("results")[0].get("id")
 
         response = await post_request(url=settings.TICKETS_API_URL, data={"debate": debate_id, "user": callback.message.chat.id})
-        json_response = response.json()
-        ticket_qr_code_path = json_response.get("qr_code")
+        json_response_ticket = response.json()
+        ticket_qr_code_path = json_response_ticket.get("qr_code")
+
+        district_response = await get_request(
+            url=settings.DISTRICTS_API_URL+f"{district_id}/",
+        )
+
+        district_response_json = district_response.json()
 
         try:
             await callback.message.answer_photo(
                 photo=f"https://api.ibratdebate.uz/media/{ticket_qr_code_path}",
-                caption="Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz\nDebate da ko'rishguncha!"
+                caption=f"Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz\nDebate da ko'rishguncha!\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
             )
         except Exception:
             await callback.message.answer(
-                text="Siz ro'yxatdan o'tdingiz debate da kutamiz"
+                text=f"Siz ro'yxatdan o'tdingiz debate da kutamiz\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
             )
         return
 
