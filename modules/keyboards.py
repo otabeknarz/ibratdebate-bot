@@ -60,14 +60,13 @@ class InlineButtons:
 
         response = await get_request(settings.REGIONS_API_URL, params=params)
         json_regions = response.json()
-        json_regions_ = []
+        regions = []
         last_id = None
-        for json_region in json_regions:
+        for json_region in json_regions.get("results"):
             if last_id != json_region.get("id"):
-                json_regions_.append(json_region)
+                regions.append(json_region)
                 last_id = json_region.get("id")
 
-        regions = json_regions.get("results")
         regions = [regions[i : i + 3] for i in range(0, len(regions), 3)]
 
         inline_buttons = [
