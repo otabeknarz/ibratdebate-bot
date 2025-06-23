@@ -116,6 +116,13 @@ class InlineButtons:
         inline_buttons.append(
             [
                 InlineKeyboardButton(
+                    text="Ibrat Debate Instagram", url="https://instagram.com/ibrat.debate"
+                )
+            ]
+        )
+        inline_buttons.append(
+            [
+                InlineKeyboardButton(
                     text="✅ A'zo bo'ldim", callback_data="joined"
                 )
             ]
