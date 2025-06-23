@@ -104,6 +104,10 @@ async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
         )
         return
 
+    await callback.message.delete()
+
+    await asyncio.sleep(0.5)
+
     await callback.message.answer(
         text=f"Assalomu alaykum! Ro'yxatdan o'tish uchun ism familiyangizni to'liq yozing",
         reply_markup=buttons.REMOVE_KEYBOARD,
