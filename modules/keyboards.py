@@ -52,12 +52,12 @@ class Buttons:
 
 class InlineButtons:
     @staticmethod
-    async def get_regions_inline_keyboard(key: str = None):
+    def get_regions_inline_keyboard(key: str = None):
         params = None
         if key == "get_ticket":
             params = {"debates__is_passed": False}
 
-        response = await get_request(settings.REGIONS_API_URL, params=params)
+        response = get_request(settings.REGIONS_API_URL, params=params)
         json_regions = response.json()
         regions = []
         last_id = None
@@ -82,12 +82,12 @@ class InlineButtons:
         return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
 
     @staticmethod
-    async def get_districts_inline_keyboard(region_id: str, key: str = None):
+    def get_districts_inline_keyboard(region_id: str, key: str = None):
         params = {"region": region_id}
         if key == "get_ticket":
             params["debates__is_passed"] = False
 
-        response = await get_request(
+        response = get_request(
             settings.DISTRICTS_API_URL, params=params
         )
         json_districts = response.json()
@@ -106,3 +106,19 @@ class InlineButtons:
         ]
 
         return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
+
+    @staticmethod
+    def get_join_channel_buttons(channels: dict) -> InlineKeyboardMarkup:
+        inline_buttons = [
+            [InlineKeyboardButton(text=channel_name, url=channel_link)]
+            for channel_id, (channel_name, channel_link) in channels.items()
+        ]
+        inline_buttons.append(
+            [
+                InlineKeyboardButton(
+                    text="✅ A'zo bo'ldim", callback_data="joined"
+                )
+            ]
+        )
+        return InlineKeyboardMarkup(inline_keyboard=inline_buttons)
+

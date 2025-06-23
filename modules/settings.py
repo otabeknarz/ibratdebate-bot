@@ -18,3 +18,11 @@ DISTRICTS_API_URL = BACKEND_URL + "/api/auth/districts/"
 
 DEBATES_API_URL = BACKEND_URL + "/api/core/debates/"
 TICKETS_API_URL = BACKEND_URL + "/api/core/tickets/"
+
+
+CHANNELS_IDs = {
+    -1001825051597: ("Azizbek Zaylobiddinov", "https://t.me/abdulazizziy"),
+    -1002277135189: ("Shoks", "https://t.me/shoks927"),
+    -1002078049933: ("Akramjon Abdurakhimov", "https://t.me/akramjon_io"),
+    # -1001803075478: ("Ozodbek Eshboboev", "https://t.me/ozodiiy"),
+}

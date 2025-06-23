@@ -3,12 +3,12 @@ import logging
 import sys
 from os import getenv
 
-from aiogram import Bot, Dispatcher, html, F
+from aiogram import Bot, Dispatcher, F
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 from aiogram.filters import CommandStart
 from aiogram.fsm.context import FSMContext
-from aiogram.types import Message, InlineKeyboardMarkup, CallbackQuery
+from aiogram.types import Message, CallbackQuery
 from dotenv import load_dotenv
 
 from modules import settings
@@ -26,6 +26,17 @@ TOKEN = getenv("BOT_TOKEN")
 
 bot = Bot(token=TOKEN, default=DefaultBotProperties(parse_mode=ParseMode.HTML))
 dp = Dispatcher()
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+
+async def check_is_subscribed(chat_id, user_id) -> bool:
+    try:
+        status = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        return status.status != "left"
+    except Exception as e:
+        logger.error(e)
+        return False
 
 
 # Registration starts
@@ -44,9 +55,55 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
         "last_name": message.from_user.last_name if message.from_user.last_name else "",
         "language_code": message.from_user.language_code,
     }
-    await post_request(settings.USERS_API_URL, user_data)
+    post_request(settings.USERS_API_URL, user_data)
+
+    subscription_statuses = {True: {}, False: {}}
+    for channel_id, (channel_name, channel_link) in settings.CHANNELS_IDs.items():
+        status = await check_is_subscribed(channel_id, message.from_user.id)
+        subscription_statuses[status].update({channel_id: (channel_name, channel_link)})
+
+    if subscription_statuses.get(False):
+        unjoined_channels_inline_buttons = inline_buttons.get_join_channel_buttons(
+            subscription_statuses.get(False)
+        )
+        await message.answer(
+            "Birinchi ushbu kanallarga ulanib oling so'ng a'zo bo'ldim tugmasini bosing",
+            reply_markup=unjoined_channels_inline_buttons,
+        )
+        return
 
     await message.answer(
+        text=f"Assalomu alaykum! Ro'yxatdan o'tish uchun ism familiyangizni to'liq yozing",
+        reply_markup=buttons.REMOVE_KEYBOARD,
+    )
+
+    await state.set_state(RegistrationState.name)
+
+
+@dp.callback_query(F.data == "joined")
+async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
+    subscription_statuses = {True: {}, False: {}}
+    for channel_id, (channel_name, channel_link) in settings.CHANNELS_IDs.items():
+        status = await check_is_subscribed(
+            channel_id, callback.message.from_user.id
+        )
+        subscription_statuses[status].update(
+            {channel_id: (channel_name, channel_link)}
+        )
+
+    if subscription_statuses.get(False):
+        unjoined_channels_inline_buttons = inline_buttons.get_join_channel_buttons(
+            subscription_statuses.get(False)
+        )
+        await callback.message.delete()
+        await asyncio.sleep(0.5)
+        await callback.message.answer(
+            "Birinchi ushbu kanallarga ulanib oling so'ng a'zo bo'ldim tugmasini bosing",
+            reply_markup=unjoined_channels_inline_buttons,
+        )
+        return
+
+    await callback.message.answer(
         text=f"Assalomu alaykum! Ro'yxatdan o'tish uchun ism familiyangizni to'liq yozing",
         reply_markup=buttons.REMOVE_KEYBOARD,
     )
@@ -57,7 +114,7 @@ async def command_start_handler(message: Message, state: FSMContext) -> None:
 @dp.message(RegistrationState.name)
 async def start_name_state_handler(message: Message, state: FSMContext) -> None:
     name = message.text
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{message.from_user.id}/", {"name": name}
     )
     await message.answer(
@@ -78,7 +135,7 @@ async def phone_name_state_handler(message: Message, state: FSMContext) -> None:
         await state.set_state(RegistrationState.phone)
         return
 
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{message.from_user.id}/",
         {"phone": message.contact.phone_number},
     )
@@ -101,7 +158,7 @@ async def english_level_state_handler(message: Message, state: FSMContext) -> No
         await state.set_state(RegistrationState.english_level)
         return
 
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{message.from_user.id}/",
         {"english_level": english_level},
     )
@@ -124,7 +181,7 @@ async def age_state_handler(message: Message, state: FSMContext) -> None:
         await state.set_state(RegistrationState.age)
         return
 
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{message.from_user.id}/", {"age": age}
     )
 
@@ -137,7 +194,7 @@ async def age_state_handler(message: Message, state: FSMContext) -> None:
 
     await message.answer(
         text="Viloyat/Respublika ingizni tanlang",
-        reply_markup=await inline_buttons.get_regions_inline_keyboard(),
+        reply_markup=inline_buttons.get_regions_inline_keyboard(),
     )
 
     await asyncio.sleep(0.5)
@@ -154,20 +211,20 @@ async def region_callback_handler(callback: CallbackQuery, state: FSMContext) ->
     if key == "get_ticket":
         await callback.message.edit_text(
             text="Ushbu tumanlarda debate larimiz bo'ladi",
-            reply_markup=await inline_buttons.get_districts_inline_keyboard(
+            reply_markup=inline_buttons.get_districts_inline_keyboard(
                 region_id=region_id,
                 key="get_ticket",
             ),
         )
         return
 
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{callback.message.chat.id}/", {"region": region_id}
     )
 
     await callback.message.edit_text(
         text="Tuman/Shahar ingizni tanlang",
-        reply_markup=await inline_buttons.get_districts_inline_keyboard(
+        reply_markup=inline_buttons.get_districts_inline_keyboard(
             region_id=region_id
         ),
     )
@@ -180,18 +237,18 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
     _, district_id, key = callback.data.split(":")
 
     if key == "get_ticket":
-        response = await get_request(
+        response = get_request(
             url=settings.DEBATES_API_URL,
             params={"district": district_id, "is_passed": False},
         )
         json_response = response.json()
         debate_id = json_response.get("results")[0].get("id")
 
-        response = await post_request(url=settings.TICKETS_API_URL, data={"debate": debate_id, "user": callback.message.chat.id})
+        response = post_request(url=settings.TICKETS_API_URL, data={"debate": debate_id, "user": callback.message.chat.id})
         json_response_ticket = response.json()
         ticket_qr_code_path = json_response_ticket.get("qr_code")
 
-        district_response = await get_request(
+        district_response = get_request(
             url=settings.DISTRICTS_API_URL+f"{district_id}/",
         )
 
@@ -208,7 +265,7 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
             )
         return
 
-    await patch_request(
+    patch_request(
         settings.USERS_API_URL + f"{callback.message.chat.id}/",
         {"district": district_id},
     )
@@ -228,7 +285,7 @@ async def district_callback_handler(callback: CallbackQuery, state: FSMContext) 
 
 @dp.message(TextEqualsFilter("👀 Kelasi debatlar"))
 async def coming_debates(message: Message, state: FSMContext) -> None:
-    response = await get_request(settings.DEBATES_API_URL)
+    response = get_request(settings.DEBATES_API_URL)
     json_response = response.json()
     debates = json_response.get("results", [])
     response_text = "Bu yerda bizda tez kunda bo'ladigan debate larimizning ro'yxati:\n\n"
@@ -248,7 +305,7 @@ async def coming_debates(message: Message, state: FSMContext) -> None:
 async def get_ticket(message: Message, state: FSMContext) -> None:
     await message.answer(
         text="Debat bo'ladigan Viloyat/Respublika ingizni tanlang",
-        reply_markup=await inline_buttons.get_regions_inline_keyboard(key="get_ticket"),
+        reply_markup=inline_buttons.get_regions_inline_keyboard(key="get_ticket"),
     )
 
 
