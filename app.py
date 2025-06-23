@@ -85,7 +85,7 @@ async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
     subscription_statuses = {True: {}, False: {}}
     for channel_id, (channel_name, channel_link) in settings.CHANNELS_IDs.items():
         status = await check_is_subscribed(
-            channel_id, callback.message.chat.id
+            channel_id, callback.message.from_user.id
         )
         subscription_statuses[status].update(
             {channel_id: (channel_name, channel_link)}
@@ -102,10 +102,6 @@ async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
             reply_markup=unjoined_channels_inline_buttons,
         )
         return
-
-    await callback.message.delete()
-
-    await asyncio.sleep(0.5)
 
     await callback.message.answer(
         text=f"Assalomu alaykum! Ro'yxatdan o'tish uchun ism familiyangizni to'liq yozing",
@@ -195,6 +191,55 @@ async def age_state_handler(message: Message, state: FSMContext) -> None:
     )
 
     await state.clear()
+
+
+@dp.callback_query(F.data.startswith("region:"))
+async def region_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    _, region_id, key = callback.data.split(":")
+
+    if key == "get_ticket":
+        await callback.message.edit_text(
+            text="Ushbu tumanlarda debate larimiz bo'ladi",
+            reply_markup=inline_buttons.get_districts_inline_keyboard(
+                region_id=region_id,
+                key="get_ticket",
+            ),
+        )
+        return
+
+
+@dp.callback_query(F.data.startswith("district:"))
+async def district_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
+    _, district_id, key = callback.data.split(":")
+
+    if key == "get_ticket":
+        response = get_request(
+            url=settings.DEBATES_API_URL,
+            params={"district": district_id, "is_passed": False},
+        )
+        json_response = response.json()
+        debate_id = json_response.get("results")[0].get("id")
+
+        response = post_request(url=settings.TICKETS_API_URL, data={"debate": debate_id, "user": callback.message.chat.id})
+        json_response_ticket = response.json()
+        ticket_qr_code_path = json_response_ticket.get("qr_code")
+
+        district_response = get_request(
+            url=settings.DISTRICTS_API_URL+f"{district_id}/",
+        )
+
+        district_response_json = district_response.json()
+
+        try:
+            await callback.message.answer_photo(
+                photo=f"https://api.ibratdebate.uz/media/{ticket_qr_code_path}",
+                caption=f"Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz\nDebate da ko'rishguncha!\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
+            )
+        except Exception:
+            await callback.message.answer(
+                text=f"Siz ro'yxatdan o'tdingiz debate da kutamiz\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
+            )
+        return
 
 
 # Registration ends
