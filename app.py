@@ -33,6 +33,7 @@ logger = logging.getLogger(__name__)
 async def check_is_subscribed(chat_id, user_id) -> bool:
     try:
         status = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
+        print(status.status)
         return status.status != "left"
     except Exception as e:
         logger.error(e)
@@ -85,7 +86,7 @@ async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
     subscription_statuses = {True: {}, False: {}}
     for channel_id, (channel_name, channel_link) in settings.CHANNELS_IDs.items():
         status = await check_is_subscribed(
-            channel_id, callback.message.from_user.id
+            channel_id, callback.message.chat.id
         )
         subscription_statuses[status].update(
             {channel_id: (channel_name, channel_link)}
