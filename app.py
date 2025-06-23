@@ -185,104 +185,12 @@ async def age_state_handler(message: Message, state: FSMContext) -> None:
         settings.USERS_API_URL + f"{message.from_user.id}/", {"age": age}
     )
 
-    msg = await message.answer(
-        text="Ajoyib!",
-        reply_markup=buttons.REMOVE_KEYBOARD,
-    )
-
-    await asyncio.sleep(0.5)
-
-    await message.answer(
-        text="Viloyat/Respublika ingizni tanlang",
-        reply_markup=inline_buttons.get_regions_inline_keyboard(),
-    )
-
-    await asyncio.sleep(0.5)
-
-    await msg.delete()
-
     await message.answer(
         text="Tabriklaymiz botimizdan ro'yxatdan o'tdingiz\nDebate ga ticket olish uchun '📝 Debate ga ro'yxatdan o'tish' tugmasini bosing",
         reply_markup=buttons.MAIN_KEYBOARD,
     )
 
     await state.clear()
-
-
-# @dp.callback_query(F.data.startswith("region:"))
-# async def region_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
-#     _, region_id, key = callback.data.split(":")
-#
-#     if key == "get_ticket":
-#         await callback.message.edit_text(
-#             text="Ushbu tumanlarda debate larimiz bo'ladi",
-#             reply_markup=inline_buttons.get_districts_inline_keyboard(
-#                 region_id=region_id,
-#                 key="get_ticket",
-#             ),
-#         )
-#         return
-#
-#     patch_request(
-#         settings.USERS_API_URL + f"{callback.message.chat.id}/", {"region": region_id}
-#     )
-#
-#     await callback.message.edit_text(
-#         text="Tuman/Shahar ingizni tanlang",
-#         reply_markup=inline_buttons.get_districts_inline_keyboard(
-#             region_id=region_id
-#         ),
-#     )
-#
-#     await state.set_state(RegistrationState.district)
-
-
-# @dp.callback_query(F.data.startswith("district:"))
-# async def district_callback_handler(callback: CallbackQuery, state: FSMContext) -> None:
-#     _, district_id, key = callback.data.split(":")
-#
-#     if key == "get_ticket":
-#         response = get_request(
-#             url=settings.DEBATES_API_URL,
-#             params={"district": district_id, "is_passed": False},
-#         )
-#         json_response = response.json()
-#         debate_id = json_response.get("results")[0].get("id")
-#
-#         response = post_request(url=settings.TICKETS_API_URL, data={"debate": debate_id, "user": callback.message.chat.id})
-#         json_response_ticket = response.json()
-#         ticket_qr_code_path = json_response_ticket.get("qr_code")
-#
-#         district_response = get_request(
-#             url=settings.DISTRICTS_API_URL+f"{district_id}/",
-#         )
-#
-#         district_response_json = district_response.json()
-#
-#         try:
-#             await callback.message.answer_photo(
-#                 photo=f"https://api.ibratdebate.uz/media/{ticket_qr_code_path}",
-#                 caption=f"Bu sizning ticketingiz uni debate ga borganingizda kirish uchun ishlatasiz\nDebate da ko'rishguncha!\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
-#             )
-#         except Exception:
-#             await callback.message.answer(
-#                 text=f"Siz ro'yxatdan o'tdingiz debate da kutamiz\nUshbu guruhga ulanib oling! - {district_response_json.get('telegram_group_link')}"
-#             )
-#         return
-#
-#     patch_request(
-#         settings.USERS_API_URL + f"{callback.message.chat.id}/",
-#         {"district": district_id},
-#     )
-#
-#     await callback.message.delete()
-#
-#     await callback.message.answer(
-#         text="Tabriklaymiz botimizdan ro'yxatdan o'tdingiz\nDebate ga ticket olish uchun '📝 Debate ga ro'yxatdan o'tish' tugmasini bosing",
-#         reply_markup=buttons.MAIN_KEYBOARD,
-#     )
-#
-#     await state.clear()
 
 
 # Registration ends
