@@ -85,7 +85,7 @@ async def ive_joined(callback: CallbackQuery, state: FSMContext) -> None:
     subscription_statuses = {True: {}, False: {}}
     for channel_id, (channel_name, channel_link) in settings.CHANNELS_IDs.items():
         status = await check_is_subscribed(
-            channel_id, callback.message.from_user.id
+            channel_id, callback.message.chat.id
         )
         subscription_statuses[status].update(
             {channel_id: (channel_name, channel_link)}
