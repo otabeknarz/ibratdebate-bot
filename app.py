@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 async def check_is_subscribed(chat_id, user_id) -> bool:
     try:
         status = await bot.get_chat_member(chat_id=chat_id, user_id=user_id)
-        print(status.status)
         return status.status != "left"
     except Exception as e:
         logger.error(e)
